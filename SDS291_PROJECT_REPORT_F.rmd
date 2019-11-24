@@ -1,0 +1,302 @@
+---
+title: "What determines insurance coverage?"
+author: "Ann Mudanye, Anuska Jain, Bushra Tasneen, Phuong Chau"
+date: "12/21/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(rio)
+library(readxl)
+require(mosaic)
+require(dplyr)
+library(GGally)
+library(car)
+
+
+
+#Read-in the csv file
+insurance <- read.csv("group-F-data.csv")
+```
+
+## Abstract
+
+The cost of healthcare insurance is higher in the United States compared to many other developed nations (Frakt et al, 2018). Healthcare costs are expected to increase by 5.5 % annually on average from 2017 to 2026 (Abutaleb, 2018). In this study, we are investigating whether there are any significant associations between certain demographic characteristics of an individual and the annual cost of healthcare charged to them. The hypothesis of our study aims to find whether characteristics such as whether a person is a smoker,the number of children they have,their sex, geographic region,  BMI (Body Mass Index) or age are significantly associated with the annual healthcare insurance cost. Initially, we attempted to construct linear models. However, we could not make conclusions about which of the predictors are significant because the model violated conditions of normality and homoscedasticity. Therefore, we generated bootstrap distributions for each of the predictors that we had initially considered. Using the bootstrap distribution, we conclude that the characteristics which are significantly associated with the cost of healthcare insurance are: whether a person is a smoker, their age, their BMI, their region of residence and the number of children they have. 
+
+
+## Introduction
+
+This study examines whether or not factors such as age, sex, body mass Index (BMI), region, number of children and tobacco use of an insurance member have an effect on the insurance cover for the member.
+
+Insurance costs are increasing in the United States. One news article reports that health insurance costs in the US have been increasing over time and in 2016 health insurance costs for a typical family of 4 was over $25,000. They also report that on average, health care costs for a family of 4 go up \$100 every month on average (USA Today, 2018). Given that health care costs are increasing over time, various articles have been published online with tips for consumers on how to choose the best health insurance plan and how to reduce their insurance premium. One such article suggested that consumers should quit smoking to lower their insurance costs (Insurance.com, 2017). With insurance costs increasing and consumers looking to reduce their health care costs, we seek to use regression analysis in evaluating whether or not there is a link between the factors mentioned earlier (age, sex, BMI, region, number of children and tobacco use of an insurance member) and insurance coverage for the member.
+
+We expect that women, individuals with a high BMI, older people, smokers, people living in the southeast region and individuals with children will incur higher insurance costs than their counterparts.There is also the likelihood of women getting pregnant in their lifetime and having to cater for the maternity insurance can be very costly to companies. Individuals with a higher BMI are prone to develop diseases such as diabetes and have complications such as joint problems. In the case of pregnancy, having a high BMI is normal but still results in high medical costs. As individuals get older, the immune system is bound to get weaker meaning more doctor visits. Smokers are likely to suffer from lung complications. If an individual has children, insurance companies have to cater for the extra costs of the respective children (Botkin). This leaves us with questions such as what value of any of the given factors will result in an increased insurance cost per individual. Overall, the goal of this study is to explore the question: What factors are most significant in determining insurance costs for an individual? Understanding that some of these factors such as sex cannot be controlled by an individual, people do have the ability to lose or gain weight depending on their BMI, quit smoking, or move to a different location. The information found through our exploration could help individuals be aware of what factors to control hence taking a step towards reducing their health insurance costs.
+
+
+## Data
+
+We found and downloaded the data from Kaggle. The data was originally shared by a GitHub contributor in 2015 along with other data sets from the textbook called Machine Learning with R by Brett Lantz. The data includes information of 1338 insurance beneficiaries. Our observational units are these 1338 individual beneficiaries. This data set was created using demographic statistics from the U.S. Census Bureau. However, we do not have information regarding which census year was used for the data. This is a population data set containing randomly picked beneficiaries from the four major geographic regions in the U.S namely Northeast, Southeast, Southwest and Northwest.  We will be generalizing our findings to the population of the U.S.
+
+Our response variable is the annual individual medical costs billed by health insurance providers in dollars as recorded during a census year. This cost has not been adjusted for inflation. Insurance costs range from $112 to $63770 with the mean and median cost being $13270 and \$9382 respectively.
+
+Our predictor variables include the other variables reported in the data. They are:
+
+1. Age: Quantitative unit: The age of the individual whose medical charges we are calculating. Age is a continuous numerical variable. Age ranges from 18-64 years old with the mean and median age being 39.21 and 39 years old respectively.
+
+2. Sex: Categorical variable: Sex of the individual which falls into one of the categories: Male or Female 
+
+3. BMI: Quantitative unit: BMI (Body Mass Index) is defined as the mass divided by the height squared. BMI is expressed in the unit kg/m2. BMI ranges from 15.96-53.13 kg/m2 with the mean and median BMI being 30.60 and 30.40 kg/m2 respectively.
+
+4. Children: Quantitative unit: This variable tells us the number of children the individual has. The number of children ranged from 0-5 children with the mean and median number of children being 1.095 and 1 respectively.
+
+5. Smoker: Categorical variable: Smoker is a categorical variable which indicates whether the individual is a smoker or not. The two categories under this variable are yes and no. 
+
+6. Region: Categorical variable : Region is a categorical variable that indicates the residential location of an individual. The four categories under this variable are Northeast, Northwest, Southeast and Southwest. 
+
+### Summary Statistics 
+
+We first acquainted ourselves with the data before constructing any models. We created boxplots for every categorical predictor variable and scatterplots for the quantitative variables to see what the effect of a category was on insurance charges and whether or not there were differences between these categories.
+
+```{r,echo=FALSE}
+boxplot(insurance$charges ~ insurance$smoker, col=c('grey', 'mistyrose'), main="Distribution of insurance charges for smoker vs. non-smoker", ylab="Charges", xlab ="smoker")
+```
+
+As can be seen from the boxplot, smokers pay higher insurance charges as compared to non-smokers. This is consistent with what we had thought as smokers are vulnerable to suffering from respiratory and lung diseases. 
+
+```{r,echo=FALSE}
+boxplot(insurance$charges ~ insurance$sex, col=c( 'mistyrose','powderblue'), main="Distribution of insurance charges for male vs. female", ylab="Charges", xlab = "Gender")
+```
+
+As can be seen from the boxplot, male and female beneficiaries pay similar insurance charges. This is contrary to what we expected to find.  One potential reason why this may be the case is because Americans tend to invest in family health plans and not individual health plans so it may be hard to determine differences in gender.
+
+```{r,echo=FALSE}
+boxplot(insurance$charges ~ insurance$region, col=c( 'red','blue',"purple","green"), main="Distribution of insurance charges across different regions", ylab="Charges", xlab = "Region")
+```
+
+As can be seen from the boxplot, those living in the southeastern region pay higher insurance charges compared to other regions. States in this region include Florida, North Carolina, South Carolina among others. Health insurance may be more expensive in this region because of the vulnerability of this region to environmental disasters (flooding etc). People living in the Northeastern region have the next higher costs of insurance charges after the southeastern regions. States like New York, Massachusetts are included in this region. The reason for higher insurance charges in this region may be because of higher living costs.
+
+```{r,echo=FALSE}
+boxplot(insurance$charges ~ insurance$children, col=c( 'red','blue',"purple","green","yellow","brown"), main="Distribution of insurance charges across different number of children", ylab="Charges", xlab = "Number of children")
+```
+
+We expected that the more children one has, the higher the insurance cost. As can be seen from the boxplot, insurance costs do not increase with an increase in the number of children. It was reported that in the year 2016, Americans on an average had 2.06 kids (Luscombe, 2018). This makes the demand for a plan for a family with 2 to 3 kids higher and therefore more expensive.
+
+```{r,echo=FALSE}
+plot(charges ~ age, data=insurance)
+```
+
+As can be seen from the scatterplot, there is a positive relationship between the insurance charges and age. This is consistent with what we had thought as older people are more vulnerable to suffering from diseases and health problems compared to younger people. 
+
+```{r,echo=FALSE}
+plot(charges ~ bmi, data=insurance)
+```
+
+As can be seen from the scatterplot, there is a somewhat positive relationship between the Insurance charges and BMI. This is consistent with what we had thought as people with higher BMI are more vulnerable to suffering from health problems as compared to those with lower BMI.
+
+## Hypotheses
+
+We are testing the significance of each predictor in the model.
+
+Our  hypotheses are given by: 
+
+$H_0 : \beta_i = 0$ and  $H_a : \beta_i \neq 0$
+
+The model that we are testing is given below:
+
+$\widehat{charges} = \hat{\beta_1}.smokerYes + \hat{\beta_2}.sexmale + \hat{\beta_3}.age + \hat{\beta_4}.bmi + \hat{\beta_5}.regionnorthwest + \hat{\beta_6}.regionsoutheast + \hat{\beta_7}.regionsouthwest + \hat{\beta_8}.children$
+
+## Methods
+
+### Multicollinearity 
+
+```{r,echo=FALSE}
+
+insurance %>% 
+  dplyr::select(age, bmi, children,charges) %>%
+  ggpairs()
+
+model <- lm(charges~age + sex + bmi + children + smoker + region, data = insurance)
+vif(model)
+```
+
+To ensure that there are no issues of multicollinearity in our model, we run diagnostic tests to find the correlation coefficients between the numerical variables and the VIF values for the predictor variables. From the output above, it can be seen that the correlation coefficients are very small and that all of the VIF values are less than 5. We can say that there is no cause to be concerned about multicollinearity when including all predictor variables in the model.
+
+### Inital Model 
+
+```{r,echo=FALSE}
+summary(model)
+```
+
+Our initial model is the full model (i.e. all predictor variables are included). As can be seen from the output, the variable sex and the variable for region northwest are insignificant in predicting the insurance charge as their p-values are greater than 0.05. We then went on to check whether or not the LINE conditions were satisfied and if we could move forward with the fitted model. 
+
+```{r,echo=FALSE}
+plot(model)
+```
+
+As can be seen from the output above, the LINE conditions for our initial model are not satisfied. The observations are not following a straight line in the Normal Q-Q plot violating the linearity and normality condition. The observations are also unevenly distributed in the RVF plot and not centered around 0 which violates the equal variance condition.We notice 3 residual clusters in the RVF plot. Independence is assumed in this situation, as we are not aware of how the sample was collected. However, as the linearity, normality and equal variance conditions are so grossly violated, we choose not to move forward with this model.
+
+### Transformation
+
+Given that our initial model is not suitable for predicting insurance charges, we then transform the variables in our model.
+
+```{r,echo= FALSE}
+insurance %>% 
+  dplyr::select(charges) %>%
+  ggpairs()
+```
+
+Looking back at the diagnostics for correlation, we notice that our response variable, insurance charges, Is right skewed. We log the variable to transform the distribution to a normal, bell shaped curve.
+
+```{r,echo=FALSE}
+
+insurance <- insurance %>%
+  mutate(logCharge = log(charges)) 
+
+insurance %>%
+  dplyr::select(logCharge) %>%
+  ggpairs()
+
+```
+
+As can be seen from the output above, we observe our expected change in the distribution. Next, we fit a model with the variable *logCharge* (logged charges) instead of  the original variable,*charges*.
+
+```{r,echo=FALSE}
+model1 <- lm(logCharge~bmi+age+sex+region+smoker, data = insurance)
+summary(model1)
+plot(model1)
+```
+
+As can be seen from the summary output above, the variable sex is significant under the new model using logged charges (with a p-value less than 0.05). We then check to see if the LINE conditions are satisfied under this new model.
+
+The LINE conditions for our new model are also not satisfied. The observations are not following a straight line in the normal Q-Q plot violating the linearity and normality condition. The observations are unevenly distributed in the RVF plot and not centered around the 0 line which violates the equal variance condition. With the new model, we do not come across distinct residual clusters as we had with the initial model.  Independence is, again, assumed in this situation, as we are not aware of how the sample was collected. However, as the linearity, normality and equal variance conditions are so grossly violated, we choose to disregard this model as well. 
+
+```{r,include=FALSE}
+trial <- lm(charges~bmi+ age + region + sex+ smoker+ children+ age:region, data = insurance)
+summary(trial)
+plot(trial)
+
+insurance <- insurance %>%
+  mutate(logchild = log(children+1))
+
+trial2 <- lm(charges~ bmi + sex+ smoker+ logchild + age + region, data = insurance)
+summary(trial2)
+plot(trial2)
+```
+
+It is interesting to note that in the RVF plots of both generated models, is that there is something driving this data into separate clusters (3 for the initial model and 2 for the new model). We thought that the may be driven by the variables sex or smoker. We go ahead and test different models by transforming our children variable by taking the log of (children+1), but this transformation also fails to satisfy the LINE conditions. We choose to use the bootstrap method. This will be discussed in the results section of this paper.
+
+
+## Results 
+
+Since the normality condition necessary for inference of multiple linear regression is not met, we perform bootstrap modeling. 
+
+```{r,echo=FALSE}
+#Bootstrap 
+
+set.seed(86753) 
+insurance_bootstrap<- mosaic::do(100) * coef(lm(charges~age+bmi+sex+children+smoker+region, data=mosaic::resample(insurance)))
+
+
+age_plot <- densityplot(~age, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["age"], col="red", lwd=3), plot=age_plot)
+
+bmi_plot <- densityplot(~bmi, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["bmi"], col="red", lwd=3), plot=bmi_plot)
+
+children_plot <- densityplot(~children, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["children"], col="red", lwd=3), plot=children_plot)
+
+smoker_plot <- densityplot(~smokeryes, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["smokeryes"], col="red", lwd=3), plot=smoker_plot)
+
+regionnw_plot <- densityplot(~regionnorthwest, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["regionnorthwest"], col="red", lwd=3), plot=regionnw_plot)
+
+regionse_plot <- densityplot(~regionsoutheast, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["regionsoutheast"], col="red", lwd=3), plot=regionse_plot)
+
+regionsw_plot <- densityplot(~regionsouthwest, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["regionsouthwest"], col="red", lwd=3), plot=regionsw_plot)
+
+sex_plot <- densityplot(~sexmale, data=insurance_bootstrap)
+ladd(panel.abline(v=coef(model)["sexmale"], col="red", lwd=3), plot=sex_plot)
+
+
+
+```
+
+ The plots above are the density plots of the bootstrap statistics of smokeryes, age, bmi, children, regionsouthwest, regionnorthwest, regionsoutheast, and sexmale. Regionnorthest and sexfemale are reference categories for region and sex respectively. 
+ Because these density plots show that the bootstrap distribution for each of the variables is normal, the 95% confidence intervals are based on the standard deviation of the bootstrap statistics.
+
+```{r}
+z_star <- qnorm(c(0.025, 0.975)) # 95% CI
+
+slope <- coef(model)["smokeryes"]
+slope + z_star * sd(~smokeryes, data=insurance_bootstrap)
+
+slope1 <- coef(model)["sexmale"]
+slope1 + z_star * sd(~sexmale, data=insurance_bootstrap)
+
+slope2 <- coef(model)["age"]
+slope2 + z_star * sd(~age, data=insurance_bootstrap)
+
+slope3 <- coef(model)["bmi"]
+slope3 + z_star * sd(~bmi, data=insurance_bootstrap)
+
+slope4 <- coef(model)["regionnorthwest"]
+slope4 + z_star * sd(~regionnorthwest, data=insurance_bootstrap)
+
+slope5 <- coef(model)["regionsoutheast"]
+slope5 + z_star * sd(~regionsoutheast, data=insurance_bootstrap)
+
+slope6 <- coef(model)["regionsouthwest"]
+slope6 + z_star * sd(~regionsouthwest, data=insurance_bootstrap)
+
+slope7 <- coef(model)["children"]
+slope7 + z_star * sd(~children, data=insurance_bootstrap)
+```
+
+None of the generated bootstrap confidence intervals include 0 except sexmale and regionnorthwest . We reject the null hypothesis of all other predictors except for the null hypothesis of regionnorthwest and sexmale. That being said, we have enough statistical evidence allowing us to drop the sexmale and  regionnorthwest variables as they are not significantly associated with insurance charges. However, we keep region as one of the explanatory variables in our model since the other region categories are significant predictors based on our 95% confidence interval generated from bootstrap. We want to keep the wholeness of the predictor,region, in our model. Therefore, we find that age, bmi, children, smoker, and region are statistically significant predictors in our final model.
+
+### Final Model 
+The final model is represented by the following equation: 
+
+$\widehat{charges} = -11990.27 + 23836.30*smoker + 256.97*age + 338.66*bmi - 352.18*regionnorthwest - 1034.36*regionsoutheast - 959.37*regionsouthwest + 474.57*children$
+
+The summary output of our final model is shown below:
+
+```{r,echo=FALSE}
+final <- lm(charges~bmi+age+region+smoker, data = insurance)
+summary(final)
+```
+
+The summary table above showed that except for regionnorthwest, all of other variables have a p-value smaller than the significance level of 0.05, which means that our data provides enough evidence that these variables are statistically significant. The R^2 value is 0.7509, which means that our model explains 75.09% of the variability in annual individual medical insurance. 
+
+
+## Discussion and Conclusion
+The aim of this project is to determine which factors would be best at determining an individual’s health insurance cover fee. Our findings show that age, BMI, region,number of children and whether an individual smoked or not are significantly associated with insurance charges. Our model can be interpreted as follows : holding all other variables constant, for every extra child an individual has,one would expect the insurance charges to be \$474.57 higher.  Keeping all other variables constant, for every 1 year increase in age,one would expect the insurance charges to be \$256.97 higher. A smoker is expected to have an insurance charge that is \$23,836.30 higher than a non-smoker with the condition that all other variables are held constant.  Holding all other variables constant, an individual from the northwest region, southeast region, and southwest region of the US is expected to have an insurance charge \$352.18 less,$1034.36 less and \$959.37 less than that of an individual in the northeast region respectively.  As the coefficients depict, Individuals in the southeast region would have to pay the lowest insurance charge. 
+
+Our final model may be generalized to the entire US population.Furthermore, our model could be improved with the addition of other predictors that are  known to also affect insurance premium charge such as income and ethnicity. 
+
+## References
+
+Frakt, A., Carroll, A. (2018, January 2). Why the U.S. Spends So Much More Than Other Nations on Health Care. Retrieved from: https://www.nytimes.com/2018/01/02/upshot/us-health-care-expensive-country-comparison.html
+
+Abutabel, Y. (2018, February 14). U.S. healthcare spending to climb 5.3 percent in 2018: agency. Retrieved from: https://www.reuters.com/article/us-usa-healthcare-spending/u-s-healthcare-spending-to-climb-5-3-percent-in-2018-agency-idUSKCN1FY2ZD
+
+Botkin, K. (n.d.). 10 Factors That Affect Your Health Insurance Premium Costs. Retrieved from: https://www.moneycrashers.com/factors-health-insurance-premium-costs/
+
+Boulton, G. (2018, June 07). You’ll be shocked at how much health insurance costs for a family of four.Retrieved from: https://www.usatoday.com/story/money/business/2018/06/06/health-care-costs-price-family-four/676046002/
+
+Income.com (2017, October 4). Tips for trimming your health insurance premiums. Retrieved from: https://www.insure.com/health-insurance/savings.html
+
+Luscombe, B. (2018, January 19). More American Women Are Having Children. Retrieved from: http://time.com/5107704/more-women-mothers/
+
+Choi, M. (2018, February). Medical Cost Personal Datasets: Insurance Forecast by using Linear Regression. Retrieved from: https://www.kaggle.com/mirichoi0218/insurance
+
